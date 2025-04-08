@@ -127,6 +127,7 @@ const extractSeasonEpisodeInfo = (fileName: string): { seasonNumber: number; epi
 const lookupContent = async (args: IpluginInputArgs, config: IArrConfig, fileName: string): Promise<IFileInfo> => {
   const term = buildTerm(fileName);
   if (!term) return { id: '-1' };
+  args.jobLog(`Found ${term} in file path`);
 
   try {
     const contentType = config.name === 'radarr' ? 'movie' : 'series';
