@@ -152,7 +152,6 @@ var lookupContent = function (args, config, fileName) { return __awaiter(void 0,
                 term = buildTerm(fileName);
                 if (!term)
                     return [2 /*return*/, { id: '-1' }];
-                args.jobLog("Found ".concat(term, " in file path"));
                 _c.label = 1;
             case 1:
                 _c.trys.push([1, 3, , 4]);
