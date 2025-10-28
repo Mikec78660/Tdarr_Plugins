@@ -1,0 +1,19 @@
+{
+  "name": "AI-Dubbing",
+  "version": "1.0.0",
+  "description": "AI Dubbing plugin for Tdarr Flow",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": [
+    "tdarr",
+    "flow",
+    "plugin",
+    "ai",
+    "dubbing"
+  ],
+  "author": "Tdarr Community",
+  "license": "MIT"
+}
