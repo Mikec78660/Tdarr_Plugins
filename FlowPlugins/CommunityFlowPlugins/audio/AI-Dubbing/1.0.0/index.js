@@ -115,7 +115,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, _a, apiEndpoint, targetLanguage, audioStreamIndex, debugLogging, ffProbeData, streams, audioStreams, inputFile, workDir, fileName, audioFilePath, ffmpegArgs, CLI, cli, res, transcription, transcribeUrl, translatedText, speechUrl, synthesizedAudioPath, error_1;
+    var lib, _a, apiEndpoint, targetLanguage, audioStreamIndex, debugLogging, ffProbeData, streams, audioStreams, inputFile, workDir, fileName, audioFilePath, ffmpegArgs, CLI, cli, res, transcription, transcribeUrl, translatedText, speechUrl, synthesizedAudioPath, outputFilePath, remuxArgs, remuxCli, remuxRes, error_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -130,7 +130,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 }
                 _b.label = 1;
             case 1:
-                _b.trys.push([1, 3, , 4]);
+                _b.trys.push([1, 4, , 5]);
                 // Validate inputs
                 if (!apiEndpoint) {
                     throw new Error('API endpoint URL is required');
@@ -227,23 +227,64 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (debugLogging) {
                     args.jobLog("Synthesized audio would be saved to: ".concat(synthesizedAudioPath));
                 }
-                // Step 5: Combine original video with new audio (simplified)
-                // In a real implementation, you would merge the original video with the synthesized audio
-                // This is a placeholder showing the concept
+                // Step 5: Mux the new audio file back into the video file as the last audio stream
+                // This simulates waiting for the API response and then merging the audio
                 if (debugLogging) {
-                    args.jobLog('AI-Dubbing process completed successfully');
+                    args.jobLog('Muxing synthesized audio back into video file as the last audio stream');
                 }
-                // Return success
+                outputFilePath = "".concat(workDir, "/").concat(fileName, "_dubbed.").concat((0, fileUtils_1.getFileName)(inputFile).split('.').pop());
+                remuxArgs = [
+                    '-i',
+                    inputFile,
+                    '-i',
+                    synthesizedAudioPath,
+                    '-c',
+                    'copy',
+                    '-map',
+                    '0:v:0', // Copy video stream from original
+                    '-map',
+                    '0:a:0', // Copy first audio stream from original (if exists)
+                    '-map',
+                    '1:a:0', // Add new audio stream as last audio stream
+                    '-y', // Overwrite output file
+                    outputFilePath,
+                ];
+                if (debugLogging) {
+                    args.jobLog("Remuxing video with new audio using FFmpeg command: ".concat(remuxArgs.join(' ')));
+                }
+                remuxCli = new CLI({
+                    cli: args.ffmpegPath,
+                    spawnArgs: remuxArgs,
+                    spawnOpts: {},
+                    jobLog: args.jobLog,
+                    outputFilePath: outputFilePath,
+                    inputFileObj: args.inputFileObj,
+                    logFullCliOutput: args.logFullCliOutput,
+                    updateWorker: args.updateWorker,
+                    args: args,
+                });
+                return [4 /*yield*/, remuxCli.runCli()];
+            case 3:
+                remuxRes = _b.sent();
+                if (remuxRes.cliExitCode !== 0) {
+                    throw new Error('FFmpeg failed to remux video with new audio');
+                }
+                if (debugLogging) {
+                    args.jobLog("Video file with new audio stream successfully created: ".concat(outputFilePath));
+                }
+                // Return success with the new file
                 return [2 /*return*/, {
-                        outputFileObj: args.inputFileObj,
+                        outputFileObj: {
+                            _id: outputFilePath,
+                        },
                         outputNumber: 1,
                         variables: args.variables,
                     }];
-            case 3:
+            case 4:
                 error_1 = _b.sent();
                 args.jobLog("AI-Dubbing plugin failed: ".concat(error_1.message));
                 throw error_1;
-            case 4: return [2 /*return*/];
+            case 5: return [2 /*return*/];
         }
     });
 }); };

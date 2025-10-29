@@ -231,17 +231,63 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog(`Synthesized audio would be saved to: ${synthesizedAudioPath}`);
     }
 
-    // Step 5: Combine original video with new audio (simplified)
-    // In a real implementation, you would merge the original video with the synthesized audio
-    // This is a placeholder showing the concept
-
+    // Step 5: Mux the new audio file back into the video file as the last audio stream
+    // This simulates waiting for the API response and then merging the audio
     if (debugLogging) {
-      args.jobLog('AI-Dubbing process completed successfully');
+      args.jobLog('Muxing synthesized audio back into video file as the last audio stream');
     }
 
-    // Return success
+    // Build FFmpeg command to remux with new audio stream as last stream
+    const outputFilePath = `${workDir}/${fileName}_dubbed.${getFileName(inputFile).split('.').pop()}`;
+    
+    const remuxArgs = [
+      '-i',
+      inputFile,
+      '-i',
+      synthesizedAudioPath,
+      '-c',
+      'copy',
+      '-map',
+      '0:v:0',           // Copy video stream from original
+      '-map',
+      '0:a:0',           // Copy first audio stream from original (if exists)
+      '-map',
+      '1:a:0',           // Add new audio stream as last audio stream
+      '-y',              // Overwrite output file
+      outputFilePath,
+    ];
+
+    if (debugLogging) {
+      args.jobLog(`Remuxing video with new audio using FFmpeg command: ${remuxArgs.join(' ')}`);
+    }
+
+    const remuxCli = new CLI({
+      cli: args.ffmpegPath,
+      spawnArgs: remuxArgs,
+      spawnOpts: {},
+      jobLog: args.jobLog,
+      outputFilePath,
+      inputFileObj: args.inputFileObj,
+      logFullCliOutput: args.logFullCliOutput,
+      updateWorker: args.updateWorker,
+      args,
+    });
+
+    const remuxRes = await remuxCli.runCli();
+
+    if (remuxRes.cliExitCode !== 0) {
+      throw new Error('FFmpeg failed to remux video with new audio');
+    }
+
+    if (debugLogging) {
+      args.jobLog(`Video file with new audio stream successfully created: ${outputFilePath}`);
+    }
+
+    // Return success with the new file
     return {
-      outputFileObj: args.inputFileObj,
+      outputFileObj: {
+        _id: outputFilePath,
+      },
       outputNumber: 1,
       variables: args.variables,
     };
