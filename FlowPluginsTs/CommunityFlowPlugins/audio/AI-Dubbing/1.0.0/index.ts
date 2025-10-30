@@ -82,7 +82,7 @@ const details = (): IpluginDetails => ({
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
-  const lib = require('../../../../../../methods/lib')();
+  const lib = require('../../../../methods/lib')();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
 
@@ -205,7 +205,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     });
 
     transcription = transcribeResponse.data.text || '';
-    
+
     if (debugLogging) {
       args.jobLog(`Transcription result: ${transcription}`);
     }
@@ -228,7 +228,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     });
 
     translatedText = translateResponse.data.text || '';
-    
+
     if (debugLogging) {
       args.jobLog(`Translated text: ${translatedText}`);
     }
@@ -255,7 +255,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     const synthesizedAudioPath = `${workDir}/${fileName}_synthesized_audio.wav`;
     const fs = require('fs');
     fs.writeFileSync(synthesizedAudioPath, speechResponse.data, 'binary');
-    
+
     if (debugLogging) {
       args.jobLog(`Synthesized audio saved to: ${synthesizedAudioPath}`);
     }
@@ -267,7 +267,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
 
     // Build FFmpeg command to remux with new audio stream as last stream
     const outputFilePath = `${workDir}/${fileName}_dubbed.${getFileName(inputFile).split('.').pop()}`;
-    
+
     const remuxArgs = [
       '-i',
       inputFile,
@@ -276,12 +276,12 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       '-c',
       'copy',
       '-map',
-      '0:v:0',           // Copy video stream from original
+      '0:v:0', // Copy video stream from original
       '-map',
-      '0:a:0',           // Copy first audio stream from original (if exists)
+      '0:a:0', // Copy first audio stream from original (if exists)
       '-map',
-      '1:a:0',           // Add new audio stream as last audio stream
-      '-y',              // Overwrite output file
+      '1:a:0', // Add new audio stream as last audio stream
+      '-y', // Overwrite output file
       outputFilePath,
     ];
 
