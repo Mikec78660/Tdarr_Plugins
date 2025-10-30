@@ -64,11 +64,11 @@ var details = function () { return ({
             label: 'API Endpoint URL',
             name: 'apiEndpoint',
             type: 'string',
-            defaultValue: 'http://speaches.lan:8000',
+            defaultValue: 'https://api.speaches.ai',
             inputUI: {
                 type: 'text',
             },
-            tooltip: 'Enter the base URL of the API endpoint (e.g., http://speaches.lan:8000)',
+            tooltip: 'Enter the base URL of the Speaches API endpoint (e.g., https://api.speaches.ai)',
         },
         {
             label: 'Target Language',
@@ -115,7 +115,7 @@ var details = function () { return ({
 exports.details = details;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, _a, apiEndpoint, targetLanguage, audioStreamIndex, debugLogging, ffProbeData, streams, audioStreams, inputFile, workDir, fileName, audioFilePath, ffmpegArgs, CLI, cli, res, transcription, transcribeUrl, translatedText, speechUrl, synthesizedAudioPath, outputFilePath, remuxArgs, remuxCli, remuxRes, error_1;
+    var lib, _a, apiEndpoint, targetLanguage, audioStreamIndex, debugLogging, ffProbeData, streams, audioStreams, inputFile, workDir, fileName, audioFilePath, ffmpegArgs, CLI, cli, res, transcription, transcribeUrl, axios, transcribeResponse, translatedText, translateUrl, translateResponse, speechUrl, speechResponse, synthesizedAudioPath, fs, outputFilePath, remuxArgs, remuxCli, remuxRes, error_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -130,7 +130,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 }
                 _b.label = 1;
             case 1:
-                _b.trys.push([1, 4, , 5]);
+                _b.trys.push([1, 7, , 8]);
                 // Validate inputs
                 if (!apiEndpoint) {
                     throw new Error('API endpoint URL is required');
@@ -202,10 +202,18 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (debugLogging) {
                     args.jobLog("Transcribing audio to text using API: ".concat(transcribeUrl));
                 }
-                // For demonstration, we'll simulate the transcription
-                // In a real implementation, you would make an HTTP request to the API
-                // For now, we'll use a placeholder that simulates the API call
-                transcription = "This is a simulated transcription of the audio content in ".concat(targetLanguage, ". The actual implementation would call the API endpoint to perform speech-to-text conversion.");
+                axios = require('axios');
+                return [4 /*yield*/, axios.post(transcribeUrl, {
+                        file: audioFilePath,
+                        language: targetLanguage,
+                    }, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })];
+            case 3:
+                transcribeResponse = _b.sent();
+                transcription = transcribeResponse.data.text || '';
                 if (debugLogging) {
                     args.jobLog("Transcription result: ".concat(transcription));
                 }
@@ -213,9 +221,18 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (debugLogging) {
                     args.jobLog("Translating text to target language: ".concat(targetLanguage));
                 }
-                // For demonstration, we'll simulate translation
-                // In a real implementation, you would make an HTTP request to a translation API
-                translatedText = "This is the translated text in ".concat(targetLanguage, ". The actual implementation would call a translation API to perform the translation.");
+                translateUrl = "".concat(apiEndpoint, "/v1/audio/translate");
+                return [4 /*yield*/, axios.post(translateUrl, {
+                        text: transcription,
+                        target_language: targetLanguage,
+                    }, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })];
+            case 4:
+                translateResponse = _b.sent();
+                translatedText = translateResponse.data.text || '';
                 if (debugLogging) {
                     args.jobLog("Translated text: ".concat(translatedText));
                 }
@@ -223,12 +240,24 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 if (debugLogging) {
                     args.jobLog("Converting text to speech using API: ".concat(speechUrl));
                 }
+                return [4 /*yield*/, axios.post(speechUrl, {
+                        text: translatedText,
+                        language: targetLanguage,
+                    }, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        responseType: 'arraybuffer', // Important for getting audio data
+                    })];
+            case 5:
+                speechResponse = _b.sent();
                 synthesizedAudioPath = "".concat(workDir, "/").concat(fileName, "_synthesized_audio.wav");
+                fs = require('fs');
+                fs.writeFileSync(synthesizedAudioPath, speechResponse.data, 'binary');
                 if (debugLogging) {
-                    args.jobLog("Synthesized audio would be saved to: ".concat(synthesizedAudioPath));
+                    args.jobLog("Synthesized audio saved to: ".concat(synthesizedAudioPath));
                 }
                 // Step 5: Mux the new audio file back into the video file as the last audio stream
-                // This simulates waiting for the API response and then merging the audio
                 if (debugLogging) {
                     args.jobLog('Muxing synthesized audio back into video file as the last audio stream');
                 }
@@ -264,7 +293,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                     args: args,
                 });
                 return [4 /*yield*/, remuxCli.runCli()];
-            case 3:
+            case 6:
                 remuxRes = _b.sent();
                 if (remuxRes.cliExitCode !== 0) {
                     throw new Error('FFmpeg failed to remux video with new audio');
@@ -280,11 +309,11 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                         outputNumber: 1,
                         variables: args.variables,
                     }];
-            case 4:
+            case 7:
                 error_1 = _b.sent();
                 args.jobLog("AI-Dubbing plugin failed: ".concat(error_1.message));
                 throw error_1;
-            case 5: return [2 /*return*/];
+            case 8: return [2 /*return*/];
         }
     });
 }); };

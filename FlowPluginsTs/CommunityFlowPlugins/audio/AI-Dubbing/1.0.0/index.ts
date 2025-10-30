@@ -31,11 +31,11 @@ const details = (): IpluginDetails => ({
       label: 'API Endpoint URL',
       name: 'apiEndpoint',
       type: 'string',
-      defaultValue: 'http://speaches.lan:8000',
+      defaultValue: 'https://api.speaches.ai',
       inputUI: {
         type: 'text',
       },
-      tooltip: 'Enter the base URL of the API endpoint (e.g., http://speaches.lan:8000)',
+      tooltip: 'Enter the base URL of the Speaches API endpoint (e.g., https://api.speaches.ai)',
     },
     {
       label: 'Target Language',
@@ -185,7 +185,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog(`Audio stream extracted successfully to: ${audioFilePath}`);
     }
 
-    // Step 2: Transcribe audio to text using API
+    // Step 2: Transcribe audio to text using Speaches API
     let transcription = '';
     const transcribeUrl = `${apiEndpoint}/v1/audio/transcriptions`;
 
@@ -193,46 +193,74 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
       args.jobLog(`Transcribing audio to text using API: ${transcribeUrl}`);
     }
 
-    // For demonstration, we'll simulate the transcription
-    // In a real implementation, you would make an HTTP request to the API
-    // For now, we'll use a placeholder that simulates the API call
-    transcription = `This is a simulated transcription of the audio content in ${targetLanguage}. The actual implementation would call the API endpoint to perform speech-to-text conversion.`;
+    // Make HTTP request to Speaches API for transcription
+    const axios = require('axios');
+    const transcribeResponse = await axios.post(transcribeUrl, {
+      file: audioFilePath,
+      language: targetLanguage,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
+    transcription = transcribeResponse.data.text || '';
+    
     if (debugLogging) {
       args.jobLog(`Transcription result: ${transcription}`);
     }
 
-    // Step 3: Translate text to target language
+    // Step 3: Translate text to target language using Speaches API
     let translatedText = '';
     if (debugLogging) {
       args.jobLog(`Translating text to target language: ${targetLanguage}`);
     }
 
-    // For demonstration, we'll simulate translation
-    // In a real implementation, you would make an HTTP request to a translation API
-    translatedText = `This is the translated text in ${targetLanguage}. The actual implementation would call a translation API to perform the translation.`;
+    // Make HTTP request to Speaches API for translation
+    const translateUrl = `${apiEndpoint}/v1/audio/translate`;
+    const translateResponse = await axios.post(translateUrl, {
+      text: transcription,
+      target_language: targetLanguage,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
+    translatedText = translateResponse.data.text || '';
+    
     if (debugLogging) {
       args.jobLog(`Translated text: ${translatedText}`);
     }
 
-    // Step 4: Convert translated text to speech using API
+    // Step 4: Convert translated text to speech using Speaches API
     const speechUrl = `${apiEndpoint}/v1/audio/speech`;
 
     if (debugLogging) {
       args.jobLog(`Converting text to speech using API: ${speechUrl}`);
     }
 
-    // For demonstration, we'll simulate the speech synthesis
-    // In a real implementation, you would make an HTTP request to the API
-    const synthesizedAudioPath = `${workDir}/${fileName}_synthesized_audio.wav`;
+    // Make HTTP request to Speaches API for speech synthesis
+    const speechResponse = await axios.post(speechUrl, {
+      text: translatedText,
+      language: targetLanguage,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: 'arraybuffer', // Important for getting audio data
+    });
 
+    // Save the synthesized audio
+    const synthesizedAudioPath = `${workDir}/${fileName}_synthesized_audio.wav`;
+    const fs = require('fs');
+    fs.writeFileSync(synthesizedAudioPath, speechResponse.data, 'binary');
+    
     if (debugLogging) {
-      args.jobLog(`Synthesized audio would be saved to: ${synthesizedAudioPath}`);
+      args.jobLog(`Synthesized audio saved to: ${synthesizedAudioPath}`);
     }
 
     // Step 5: Mux the new audio file back into the video file as the last audio stream
-    // This simulates waiting for the API response and then merging the audio
     if (debugLogging) {
       args.jobLog('Muxing synthesized audio back into video file as the last audio stream');
     }
