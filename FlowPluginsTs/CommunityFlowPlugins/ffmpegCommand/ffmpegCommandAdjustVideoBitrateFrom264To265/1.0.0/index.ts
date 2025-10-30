@@ -26,7 +26,7 @@ const details = (): IpluginDetails => ({
       defaultValue: '50',
       inputUI: {
         type: 'slider',
-        sliderOptions: {max: 90, min: 10 }
+        sliderOptions: { max: 90, min: 10 },
       },
       tooltip: `Specify the ratio used to adjust the bitrate.
                           \\nExample:\\n
@@ -68,10 +68,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
   const bitrate_ratio = Number(args.inputs.bitrate_ratio);
 
   // Duration can be found (or not) at multiple spots, trying to cover all of them here.
-  const duration =
-    Number(args.inputFileObj.ffProbeData?.format?.duration)
+  const duration = Number(args.inputFileObj.ffProbeData?.format?.duration)
     || args.inputFileObj.meta?.Duration
-    || args.inputFileObj.ffProbeData.streams?.find(stream => stream.codec_type === 'video')?.duration
+    || args.inputFileObj.ffProbeData.streams?.find((stream) => stream.codec_type === 'video')?.duration
     || -1;
 
   if (duration !== -1 && typeof args.inputFileObj.file_size) {
@@ -93,8 +92,7 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
         stream.outputArgs.push('-bufsize', `${String(currentBitrate)}k`);
       }
     });
-  } else
-    args.jobLog('Some data is missing (duration or file_size). Could not calculate bitrate.');
+  } else args.jobLog('Some data is missing (duration or file_size). Could not calculate bitrate.');
 
   return {
     outputFileObj: args.inputFileObj,

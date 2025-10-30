@@ -119,7 +119,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                lib = require('../../../../methods/lib')();
+                lib = require('../../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
                 _a = args.inputs, apiEndpoint = _a.apiEndpoint, targetLanguage = _a.targetLanguage, audioStreamIndex = _a.audioStreamIndex, debugLogging = _a.debugLogging;

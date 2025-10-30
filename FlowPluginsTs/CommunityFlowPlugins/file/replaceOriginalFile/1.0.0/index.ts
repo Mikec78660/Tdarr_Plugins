@@ -36,7 +36,7 @@ const details = (): IpluginDetails => ({
     {
       number: 2,
       tooltip: 'File has not been replaced',
-    }
+    },
   ],
 });
 

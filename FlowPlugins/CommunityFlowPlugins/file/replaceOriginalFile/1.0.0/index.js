@@ -65,7 +65,7 @@ var details = function () { return ({
         {
             number: 2,
             tooltip: 'File has not been replaced',
-        }
+        },
     ],
 }); };
 exports.details = details;

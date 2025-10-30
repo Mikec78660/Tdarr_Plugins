@@ -23,7 +23,7 @@ var details = function () { return ({
             defaultValue: '50',
             inputUI: {
                 type: 'slider',
-                sliderOptions: { max: 90, min: 10 }
+                sliderOptions: { max: 90, min: 10 },
             },
             tooltip: "Specify the ratio used to adjust the bitrate.\n                          \\nExample:\\n\n                          50\n      \n                          \\nExample:\\n\n                          60",
         },
