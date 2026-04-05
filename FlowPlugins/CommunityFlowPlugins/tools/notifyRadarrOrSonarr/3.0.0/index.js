@@ -176,31 +176,42 @@ var refreshArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, 
     });
 }); };
 var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, void 0, function () {
-    var fileId, seriesResponse, seriesData, episodeFile, error_2;
-    var _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
+    var movieResponse, movieData, fileId, error_2;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
-                _c.trys.push([0, 9, , 10]);
+                _b.trys.push([0, 7, , 8]);
                 if (!(arrApp.name === 'radarr')) return [3 /*break*/, 3];
                 return [4 /*yield*/, args.deps.axios({
                         method: 'get',
-                        url: "".concat(arrApp.host, "/api/v3/renameMovie?movieId=").concat(id),
+                        url: "".concat(arrApp.host, "/api/v3/movie/").concat(id),
                         headers: arrApp.headers,
                     })];
             case 1:
-                _c.sent();
-                // Now trigger the rename command
+                movieResponse = _b.sent();
+                movieData = movieResponse.data;
+                if (!((_a = movieData === null || movieData === void 0 ? void 0 : movieData.movieFile) === null || _a === void 0 ? void 0 : _a.id)) {
+                    args.jobLog('No movie file found for this movie, skipping rename');
+                    return [2 /*return*/, false];
+                }
+                fileId = movieData.movieFile.id;
+                args.jobLog("Found movie file ID: ".concat(fileId));
+                // Use renameMovieFiles command with specific file ID
                 return [4 /*yield*/, args.deps.axios({
                         method: 'post',
                         url: "".concat(arrApp.host, "/api/v3/command"),
                         headers: arrApp.headers,
-                        data: JSON.stringify({ name: 'renameMovie', movieIds: [id] }),
+                        data: JSON.stringify({
+                            name: 'renameMovieFiles',
+                            movieId: id,
+                            files: [fileId],
+                        }),
                     })];
             case 2:
-                // Now trigger the rename command
-                _c.sent();
-                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for movie ID ").concat(id, "."));
+                // Use renameMovieFiles command with specific file ID
+                _b.sent();
+                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for movie ID ").concat(id, ", file ").concat(fileId, "."));
                 return [2 /*return*/, true];
             case 3:
                 if (!(arrApp.name === 'sonarr')) return [3 /*break*/, 6];
@@ -210,8 +221,7 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                         headers: arrApp.headers,
                     })];
             case 4:
-                _c.sent();
-                // Now trigger the rename command
+                _b.sent();
                 return [4 /*yield*/, args.deps.axios({
                         method: 'post',
                         url: "".concat(arrApp.host, "/api/v3/command"),
@@ -219,46 +229,17 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                         data: JSON.stringify({ name: 'RenameSeries', seriesId: id }),
                     })];
             case 5:
-                // Now trigger the rename command
-                _c.sent();
+                _b.sent();
                 args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for series ID ").concat(id, "."));
                 return [2 /*return*/, true];
             case 6:
-                fileId = 0;
-                return [4 /*yield*/, args.deps.axios({
-                        method: 'get',
-                        url: "".concat(arrApp.host, "/api/v3/series/").concat(id),
-                        headers: arrApp.headers,
-                    })];
+                args.jobLog("Unknown arr type: ".concat(arrApp.name));
+                return [2 /*return*/, false];
             case 7:
-                seriesResponse = _c.sent();
-                seriesData = seriesResponse.data;
-                if (((_a = seriesData === null || seriesData === void 0 ? void 0 : seriesData.episodes) === null || _a === void 0 ? void 0 : _a.length) > 0) {
-                    episodeFile = seriesData.episodes.find(function (e) { return e.hasFile; });
-                    if ((_b = episodeFile === null || episodeFile === void 0 ? void 0 : episodeFile.episodeFile) === null || _b === void 0 ? void 0 : _b.id) {
-                        fileId = episodeFile.episodeFile.id;
-                        args.jobLog("Found episode file ID: ".concat(fileId));
-                    }
-                }
-                if (!fileId) {
-                    args.jobLog('No file ID found for Sonarr, skipping rename');
-                    return [2 /*return*/, false];
-                }
-                return [4 /*yield*/, args.deps.axios({
-                        method: 'post',
-                        url: "".concat(arrApp.host, "/api/v3/command"),
-                        headers: arrApp.headers,
-                        data: arrApp.buildRenameRequest(id, fileId),
-                    })];
-            case 8:
-                _c.sent();
-                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for file ").concat(fileId, "."));
-                return [2 /*return*/, true];
-            case 9:
-                error_2 = _c.sent();
+                error_2 = _b.sent();
                 args.jobLog("Error triggering rename in ".concat(arrApp.name, ": ").concat(error_2.message));
                 return [2 /*return*/, false];
-            case 10: return [2 /*return*/];
+            case 8: return [2 /*return*/];
         }
     });
 }); };

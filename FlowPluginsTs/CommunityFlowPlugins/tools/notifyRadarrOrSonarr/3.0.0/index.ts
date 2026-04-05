@@ -169,28 +169,40 @@ const renameArr = async (
   args: IpluginInputArgs,
 ): Promise<boolean> => {
   try {
-    // For Radarr, use the /api/renameMovie endpoint which doesn't require file IDs
-    // This will let Radarr determine what files need renaming based on its naming convention
+    // For Radarr, fetch movie details to get the file ID, then use renameMovieFiles
     if (arrApp.name === 'radarr') {
-      await args.deps.axios({
+      const movieResponse = await args.deps.axios({
         method: 'get',
-        url: `${arrApp.host}/api/v3/renameMovie?movieId=${id}`,
+        url: `${arrApp.host}/api/v3/movie/${id}`,
         headers: arrApp.headers,
       });
+      const movieData = movieResponse.data;
 
-      // Now trigger the rename command
+      if (!movieData?.movieFile?.id) {
+        args.jobLog('No movie file found for this movie, skipping rename');
+        return false;
+      }
+
+      const fileId = movieData.movieFile.id;
+      args.jobLog(`Found movie file ID: ${fileId}`);
+
+      // Use renameMovieFiles command with specific file ID
       await args.deps.axios({
         method: 'post',
         url: `${arrApp.host}/api/v3/command`,
         headers: arrApp.headers,
-        data: JSON.stringify({ name: 'renameMovie', movieIds: [id] }),
+        data: JSON.stringify({
+          name: 'renameMovieFiles',
+          movieId: id,
+          files: [fileId],
+        }),
       });
 
-      args.jobLog(`✔ Rename command sent to ${arrApp.name} for movie ID ${id}.`);
+      args.jobLog(`✔ Rename command sent to ${arrApp.name} for movie ID ${id}, file ${fileId}.`);
       return true;
     }
 
-    // For Sonarr, use the /api/renameSeries endpoint similar to Radarr
+    // For Sonarr, use the /api/rename endpoint to get rename preview, then trigger rename
     if (arrApp.name === 'sonarr') {
       await args.deps.axios({
         method: 'get',
@@ -198,7 +210,6 @@ const renameArr = async (
         headers: arrApp.headers,
       });
 
-      // Now trigger the rename command
       await args.deps.axios({
         method: 'post',
         url: `${arrApp.host}/api/v3/command`,
@@ -210,36 +221,8 @@ const renameArr = async (
       return true;
     }
 
-    // Fallback: try with file ID (kept for backward compatibility)
-    let fileId = 0;
-    const seriesResponse = await args.deps.axios({
-      method: 'get',
-      url: `${arrApp.host}/api/v3/series/${id}`,
-      headers: arrApp.headers,
-    });
-    const seriesData = seriesResponse.data;
-    if (seriesData?.episodes?.length > 0) {
-      const episodeFile = seriesData.episodes.find((e: { hasFile: boolean }) => e.hasFile);
-      if (episodeFile?.episodeFile?.id) {
-        fileId = episodeFile.episodeFile.id;
-        args.jobLog(`Found episode file ID: ${fileId}`);
-      }
-    }
-
-    if (!fileId) {
-      args.jobLog('No file ID found for Sonarr, skipping rename');
-      return false;
-    }
-
-    await args.deps.axios({
-      method: 'post',
-      url: `${arrApp.host}/api/v3/command`,
-      headers: arrApp.headers,
-      data: arrApp.buildRenameRequest(id, fileId),
-    });
-
-    args.jobLog(`✔ Rename command sent to ${arrApp.name} for file ${fileId}.`);
-    return true;
+    args.jobLog(`Unknown arr type: ${arrApp.name}`);
+    return false;
   } catch (error) {
     args.jobLog(`Error triggering rename in ${arrApp.name}: ${(error as Error).message}`);
     return false;
