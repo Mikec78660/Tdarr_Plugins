@@ -119,6 +119,19 @@ var plugin = function (args) {
             if (!stream.outputArgs) {
                 stream.outputArgs = [];
             }
+            // Remove any existing codec args for this stream index to avoid duplicates
+            var streamIndexArg_1 = "-c:".concat(stream.index);
+            stream.outputArgs = stream.outputArgs.filter(function (arg, i) {
+                // Remove this arg and the next arg (the codec value) if it's a codec setting
+                if (arg === streamIndexArg_1 && i + 1 < stream.outputArgs.length) {
+                    var nextArg = stream.outputArgs[i + 1];
+                    // Skip if it's another stream index arg or codec arg
+                    if (!nextArg.startsWith('-c:') && nextArg !== 'copy') {
+                        return false;
+                    }
+                }
+                return true;
+            });
             stream.outputArgs.push("-c:".concat(stream.index), 'copy');
             args.jobLog("Setting copy codec for stream index ".concat(stream.index));
         }
