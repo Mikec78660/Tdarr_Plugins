@@ -113,13 +113,11 @@ var plugin = function (args) {
         if (shouldRemove) {
             // eslint-disable-next-line no-param-reassign
             stream.removed = true;
+            args.jobLog("Removing stream index ".concat(stream.index));
         }
-        else {
-            // Add copy codec to preserve original format for streams that are kept
-            // Simply set outputArgs to just the copy codec (removes any existing args)
-            stream.outputArgs = ["-c:".concat(stream.index), 'copy'];
-            args.jobLog("Setting copy codec for stream index ".concat(stream.index));
-        }
+        // Note: Don't set outputArgs here. ffmpegCommandExecute will automatically
+        // add '-c:{outputIndex} copy' for any stream with empty outputArgs.
+        // This ensures the correct output stream index is used.
     });
     return {
         outputFileObj: args.inputFileObj,
