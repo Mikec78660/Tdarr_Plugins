@@ -169,36 +169,46 @@ const renameArr = async (
   args: IpluginInputArgs,
 ): Promise<boolean> => {
   try {
-    // First, fetch the movie/episode details to get the file ID
-    let fileId = 0;
-
+    // For Radarr, use the /api/renameMovie endpoint which doesn't require file IDs
+    // This will let Radarr determine what files need renaming based on its naming convention
     if (arrApp.name === 'radarr') {
-      const movieResponse = await args.deps.axios({
+      await args.deps.axios({
         method: 'get',
-        url: `${arrApp.host}/api/v3/movie/${id}`,
+        url: `${arrApp.host}/api/v3/renameMovie?movieId=${id}`,
         headers: arrApp.headers,
       });
-      const movieData = movieResponse.data;
-      if (movieData?.movieFile?.id) {
-        fileId = movieData.movieFile.id;
-        args.jobLog(`Found movie file ID: ${fileId}`);
-      }
-    } else if (arrApp.name === 'sonarr') {
-      // For Sonarr, we need to get episode info
-      const seriesResponse = await args.deps.axios({
-        method: 'get',
-        url: `${arrApp.host}/api/v3/series/${id}`,
+
+      // Now trigger the rename command
+      await args.deps.axios({
+        method: 'post',
+        url: `${arrApp.host}/api/v3/command`,
         headers: arrApp.headers,
+        data: JSON.stringify({ name: 'renameMovie', movieIds: [id] }),
       });
-      const seriesData = seriesResponse.data;
-      // Get the first episode file
-      if (seriesData?.episodes?.length > 0) {
-        const episodeFile = seriesData.episodes.find((e: { hasFile: boolean }) => e.hasFile);
-        if (episodeFile?.episodeFile?.id) {
-          fileId = episodeFile.episodeFile.id;
-          args.jobLog(`Found episode file ID: ${fileId}`);
-        }
+
+      args.jobLog(`✔ Rename command sent to ${arrApp.name} for movie ID ${id}.`);
+      return true;
+    }
+
+    // For Sonarr, we still need file ID
+    let fileId = 0;
+    const seriesResponse = await args.deps.axios({
+      method: 'get',
+      url: `${arrApp.host}/api/v3/series/${id}`,
+      headers: arrApp.headers,
+    });
+    const seriesData = seriesResponse.data;
+    if (seriesData?.episodes?.length > 0) {
+      const episodeFile = seriesData.episodes.find((e: { hasFile: boolean }) => e.hasFile);
+      if (episodeFile?.episodeFile?.id) {
+        fileId = episodeFile.episodeFile.id;
+        args.jobLog(`Found episode file ID: ${fileId}`);
       }
+    }
+
+    if (!fileId) {
+      args.jobLog('No file ID found for Sonarr, skipping rename');
+      return false;
     }
 
     await args.deps.axios({
