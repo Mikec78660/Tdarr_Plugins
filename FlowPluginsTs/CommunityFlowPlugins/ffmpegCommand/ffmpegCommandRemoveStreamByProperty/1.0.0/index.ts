@@ -141,6 +141,13 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
       if (shouldRemove) {
         // eslint-disable-next-line no-param-reassign
         stream.removed = true;
+      } else {
+        // Add copy codec to preserve original format for streams that are kept
+        if (!stream.outputArgs) {
+          stream.outputArgs = [];
+        }
+        stream.outputArgs.push(`-c:${stream.index}`, 'copy');
+        args.jobLog(`Setting copy codec for stream index ${stream.index}`);
       }
     });
 
