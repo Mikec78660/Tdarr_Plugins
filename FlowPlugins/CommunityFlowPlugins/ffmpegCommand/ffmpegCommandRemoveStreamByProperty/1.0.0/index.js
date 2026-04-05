@@ -116,27 +116,18 @@ var plugin = function (args) {
         }
         else {
             // Add copy codec to preserve original format for streams that are kept
-            if (!stream.outputArgs) {
-                stream.outputArgs = [];
-            }
-            // Remove any existing codec args for this specific stream index to avoid duplicates
-            var streamIndex = stream.index;
-            var newOutputArgs = [];
-            var skipNext = false;
-            for (var i = 0; i < stream.outputArgs.length; i += 1) {
-                var arg = stream.outputArgs[i];
-                if (skipNext) {
-                    skipNext = false;
-                    continue;
+            // Filter out any existing codec args for this specific stream index
+            var streamIndex_1 = stream.index;
+            stream.outputArgs = (stream.outputArgs || []).filter(function (arg, i, arr) {
+                // Skip -c:{index} and its value
+                if (arg === "-c:".concat(streamIndex_1)) {
+                    if (i + 1 < arr.length) {
+                        // Skip the next arg (the codec value)
+                        return false;
+                    }
                 }
-                // If this is -c:{streamIndex} or -c:a{streamIndex}, skip it and the next arg
-                if (arg === "-c:".concat(streamIndex) || arg === "-c:a".concat(streamIndex)) {
-                    skipNext = true;
-                    continue;
-                }
-                newOutputArgs.push(arg);
-            }
-            stream.outputArgs = newOutputArgs;
+                return true;
+            });
             stream.outputArgs.push("-c:".concat(stream.index), 'copy');
             args.jobLog("Setting copy codec for stream index ".concat(stream.index));
         }

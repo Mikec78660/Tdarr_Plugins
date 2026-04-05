@@ -143,28 +143,18 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
         stream.removed = true;
       } else {
         // Add copy codec to preserve original format for streams that are kept
-        if (!stream.outputArgs) {
-          stream.outputArgs = [];
-        }
-
-        // Remove any existing codec args for this specific stream index to avoid duplicates
+        // Filter out any existing codec args for this specific stream index
         const streamIndex = stream.index;
-        const newOutputArgs: string[] = [];
-        let skipNext = false;
-        for (let i = 0; i < stream.outputArgs.length; i += 1) {
-          const arg = stream.outputArgs[i];
-          if (skipNext) {
-            skipNext = false;
-            continue;
+        stream.outputArgs = (stream.outputArgs || []).filter((arg, i, arr) => {
+          // Skip -c:{index} and its value
+          if (arg === `-c:${streamIndex}`) {
+            if (i + 1 < arr.length) {
+              // Skip the next arg (the codec value)
+              return false;
+            }
           }
-          // If this is -c:{streamIndex} or -c:a{streamIndex}, skip it and the next arg
-          if (arg === `-c:${streamIndex}` || arg === `-c:a${streamIndex}`) {
-            skipNext = true;
-            continue;
-          }
-          newOutputArgs.push(arg);
-        }
-        stream.outputArgs = newOutputArgs;
+          return true;
+        });
 
         stream.outputArgs.push(`-c:${stream.index}`, 'copy');
         args.jobLog(`Setting copy codec for stream index ${stream.index}`);
