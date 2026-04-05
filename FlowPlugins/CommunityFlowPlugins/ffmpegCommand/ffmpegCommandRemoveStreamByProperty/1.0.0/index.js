@@ -115,9 +115,12 @@ var plugin = function (args) {
             stream.removed = true;
             args.jobLog("Removing stream index ".concat(stream.index));
         }
-        // Note: Don't set outputArgs here. ffmpegCommandExecute will automatically
-        // add '-c:{outputIndex} copy' for any stream with empty outputArgs.
-        // This ensures the correct output stream index is used.
+        else {
+            // Force copy codec by directly setting outputArgs with the placeholder
+            // This will be resolved by ffmpegCommandExecute using the correct output index
+            stream.outputArgs = ['-c:{outputIndex}', 'copy'];
+            args.jobLog("Setting copy codec for stream index ".concat(stream.index));
+        }
     });
     return {
         outputFileObj: args.inputFileObj,
