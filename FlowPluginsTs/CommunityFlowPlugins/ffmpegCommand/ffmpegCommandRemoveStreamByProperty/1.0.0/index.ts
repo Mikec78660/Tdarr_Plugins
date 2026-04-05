@@ -147,19 +147,24 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
           stream.outputArgs = [];
         }
 
-        // Remove any existing codec args for this stream index to avoid duplicates
-        const streamIndexArg = `-c:${stream.index}`;
-        stream.outputArgs = stream.outputArgs.filter((arg, i) => {
-          // Remove this arg and the next arg (the codec value) if it's a codec setting
-          if (arg === streamIndexArg && i + 1 < stream.outputArgs.length) {
-            const nextArg = stream.outputArgs[i + 1];
-            // Skip if it's another stream index arg or codec arg
-            if (!nextArg.startsWith('-c:') && nextArg !== 'copy') {
-              return false;
-            }
+        // Remove any existing codec args for this specific stream index to avoid duplicates
+        const streamIndex = stream.index;
+        const newOutputArgs: string[] = [];
+        let skipNext = false;
+        for (let i = 0; i < stream.outputArgs.length; i += 1) {
+          const arg = stream.outputArgs[i];
+          if (skipNext) {
+            skipNext = false;
+            continue;
           }
-          return true;
-        });
+          // If this is -c:{streamIndex} or -c:a{streamIndex}, skip it and the next arg
+          if (arg === `-c:${streamIndex}` || arg === `-c:a${streamIndex}`) {
+            skipNext = true;
+            continue;
+          }
+          newOutputArgs.push(arg);
+        }
+        stream.outputArgs = newOutputArgs;
 
         stream.outputArgs.push(`-c:${stream.index}`, 'copy');
         args.jobLog(`Setting copy codec for stream index ${stream.index}`);
