@@ -181,7 +181,7 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
-                _c.trys.push([0, 6, , 7]);
+                _c.trys.push([0, 9, , 10]);
                 if (!(arrApp.name === 'radarr')) return [3 /*break*/, 3];
                 return [4 /*yield*/, args.deps.axios({
                         method: 'get',
@@ -203,13 +203,34 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                 args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for movie ID ").concat(id, "."));
                 return [2 /*return*/, true];
             case 3:
+                if (!(arrApp.name === 'sonarr')) return [3 /*break*/, 6];
+                return [4 /*yield*/, args.deps.axios({
+                        method: 'get',
+                        url: "".concat(arrApp.host, "/api/v3/rename?seriesId=").concat(id),
+                        headers: arrApp.headers,
+                    })];
+            case 4:
+                _c.sent();
+                // Now trigger the rename command
+                return [4 /*yield*/, args.deps.axios({
+                        method: 'post',
+                        url: "".concat(arrApp.host, "/api/v3/command"),
+                        headers: arrApp.headers,
+                        data: JSON.stringify({ name: 'RenameSeries', seriesId: id }),
+                    })];
+            case 5:
+                // Now trigger the rename command
+                _c.sent();
+                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for series ID ").concat(id, "."));
+                return [2 /*return*/, true];
+            case 6:
                 fileId = 0;
                 return [4 /*yield*/, args.deps.axios({
                         method: 'get',
                         url: "".concat(arrApp.host, "/api/v3/series/").concat(id),
                         headers: arrApp.headers,
                     })];
-            case 4:
+            case 7:
                 seriesResponse = _c.sent();
                 seriesData = seriesResponse.data;
                 if (((_a = seriesData === null || seriesData === void 0 ? void 0 : seriesData.episodes) === null || _a === void 0 ? void 0 : _a.length) > 0) {
@@ -229,15 +250,15 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                         headers: arrApp.headers,
                         data: arrApp.buildRenameRequest(id, fileId),
                     })];
-            case 5:
+            case 8:
                 _c.sent();
                 args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for file ").concat(fileId, "."));
                 return [2 /*return*/, true];
-            case 6:
+            case 9:
                 error_2 = _c.sent();
                 args.jobLog("Error triggering rename in ".concat(arrApp.name, ": ").concat(error_2.message));
                 return [2 /*return*/, false];
-            case 7: return [2 /*return*/];
+            case 10: return [2 /*return*/];
         }
     });
 }); };

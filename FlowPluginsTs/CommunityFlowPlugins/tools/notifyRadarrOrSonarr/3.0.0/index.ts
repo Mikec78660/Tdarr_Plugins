@@ -190,7 +190,27 @@ const renameArr = async (
       return true;
     }
 
-    // For Sonarr, we still need file ID
+    // For Sonarr, use the /api/renameSeries endpoint similar to Radarr
+    if (arrApp.name === 'sonarr') {
+      await args.deps.axios({
+        method: 'get',
+        url: `${arrApp.host}/api/v3/rename?seriesId=${id}`,
+        headers: arrApp.headers,
+      });
+
+      // Now trigger the rename command
+      await args.deps.axios({
+        method: 'post',
+        url: `${arrApp.host}/api/v3/command`,
+        headers: arrApp.headers,
+        data: JSON.stringify({ name: 'RenameSeries', seriesId: id }),
+      });
+
+      args.jobLog(`✔ Rename command sent to ${arrApp.name} for series ID ${id}.`);
+      return true;
+    }
+
+    // Fallback: try with file ID (kept for backward compatibility)
     let fileId = 0;
     const seriesResponse = await args.deps.axios({
       method: 'get',
