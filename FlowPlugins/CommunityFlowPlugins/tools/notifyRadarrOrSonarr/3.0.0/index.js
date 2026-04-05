@@ -86,9 +86,20 @@ var details = function () { return ({
                 + 'https://radarr.domain.com\n'
                 + 'https://sonarr.domain.com',
         },
+        {
+            label: 'Auto Rename',
+            name: 'autoRename',
+            type: 'boolean',
+            defaultValue: 'false',
+            inputUI: {
+                type: 'switch',
+            },
+            tooltip: 'Automatically trigger a rename based on the naming convention. '
+                + 'If nothing needs to be renamed, it will report success.',
+        },
     ],
     outputs: [
-        { number: 1, tooltip: 'Radarr or Sonarr notified' },
+        { number: 1, tooltip: 'Radarr or Sonarr notified and renamed if needed' },
         { number: 2, tooltip: 'Radarr or Sonarr do not know this file' },
     ],
 }); };
@@ -99,10 +110,12 @@ var arrConfigs = {
     radarr: {
         content: 'Movie',
         buildRefreshRequest: function (id) { return JSON.stringify({ name: 'RefreshMovie', movieIds: [id] }); },
+        buildRenameRequest: function () { return JSON.stringify({ name: 'RenameMovie', movieIds: [] }); },
     },
     sonarr: {
         content: 'Serie',
         buildRefreshRequest: function (id) { return JSON.stringify({ name: 'RefreshSeries', seriesId: id }); },
+        buildRenameRequest: function (_id) { return JSON.stringify({ name: 'RenameSeries', seriesId: _id }); },
     },
 };
 var normalizeHost = function (host) {
@@ -122,6 +135,7 @@ var createArrApp = function (arrType, host, apiKey) {
         headers: headers,
         content: config.content,
         buildRefreshRequest: config.buildRefreshRequest,
+        buildRenameRequest: config.buildRenameRequest,
     };
 };
 var refreshArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, void 0, function () {
@@ -154,8 +168,32 @@ var refreshArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, 
         }
     });
 }); };
+var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, void 0, function () {
+    var response, error_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, args.deps.axios({
+                        method: 'post',
+                        url: "".concat(arrApp.host, "/api/").concat(API_VERSION, "/command"),
+                        headers: arrApp.headers,
+                        data: arrApp.buildRenameRequest(id),
+                    })];
+            case 1:
+                response = _a.sent();
+                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, "."));
+                return [2 /*return*/, true];
+            case 2:
+                error_2 = _a.sent();
+                args.jobLog("Error triggering rename in ".concat(arrApp.name, ": ").concat(error_2.message));
+                return [2 /*return*/, false];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, _a, arr, arr_api_key, arr_host, arrApp, id, refreshed;
+    var lib, _a, arr, arr_api_key, arr_host, autoRename, arrApp, id, refreshed;
     var _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -163,7 +201,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 lib = require('../../../../../methods/lib')();
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
                 args.inputs = lib.loadDefaultValues(args.inputs, details);
-                _a = args.inputs, arr = _a.arr, arr_api_key = _a.arr_api_key, arr_host = _a.arr_host;
+                _a = args.inputs, arr = _a.arr, arr_api_key = _a.arr_api_key, arr_host = _a.arr_host, autoRename = _a.autoRename;
                 arrApp = createArrApp(arr, arr_host, arr_api_key);
                 args.jobLog('Going to force scan');
                 args.jobLog("Refreshing ".concat(arrApp.name, "..."));
@@ -172,11 +210,17 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, refreshArr(arrApp, id, args)];
             case 1:
                 refreshed = _c.sent();
-                return [2 /*return*/, {
-                        outputFileObj: args.inputFileObj,
-                        outputNumber: refreshed ? 1 : 2,
-                        variables: args.variables,
-                    }];
+                if (!(autoRename && refreshed)) return [3 /*break*/, 3];
+                args.jobLog('Auto Rename enabled, triggering rename...');
+                return [4 /*yield*/, renameArr(arrApp, id, args)];
+            case 2:
+                _c.sent();
+                _c.label = 3;
+            case 3: return [2 /*return*/, {
+                    outputFileObj: args.inputFileObj,
+                    outputNumber: refreshed ? 1 : 2,
+                    variables: args.variables,
+                }];
         }
     });
 }); };

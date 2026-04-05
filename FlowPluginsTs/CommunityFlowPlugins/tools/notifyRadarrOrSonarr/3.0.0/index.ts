@@ -53,9 +53,20 @@ const details = (): IpluginDetails => ({
         + 'https://radarr.domain.com\n'
         + 'https://sonarr.domain.com',
     },
+    {
+      label: 'Auto Rename',
+      name: 'autoRename',
+      type: 'boolean',
+      defaultValue: 'false',
+      inputUI: {
+        type: 'switch',
+      },
+      tooltip: 'Automatically trigger a rename based on the naming convention. '
+        + 'If nothing needs to be renamed, it will report success.',
+    },
   ],
   outputs: [
-    { number: 1, tooltip: 'Radarr or Sonarr notified' },
+    { number: 1, tooltip: 'Radarr or Sonarr notified and renamed if needed' },
     { number: 2, tooltip: 'Radarr or Sonarr do not know this file' },
   ],
 });
@@ -72,6 +83,7 @@ interface IArrApp {
   headers: IHTTPHeaders;
   content: string;
   buildRefreshRequest: (id: number) => string;
+  buildRenameRequest: (id: number) => string;
 }
 
 const API_VERSION = 'v3';
@@ -81,10 +93,12 @@ const arrConfigs = {
   radarr: {
     content: 'Movie',
     buildRefreshRequest: (id: number) => JSON.stringify({ name: 'RefreshMovie', movieIds: [id] }),
+    buildRenameRequest: () => JSON.stringify({ name: 'RenameMovie', movieIds: [] }),
   },
   sonarr: {
     content: 'Serie',
     buildRefreshRequest: (id: number) => JSON.stringify({ name: 'RefreshSeries', seriesId: id }),
+    buildRenameRequest: (_id: number) => JSON.stringify({ name: 'RenameSeries', seriesId: _id }),
   },
 } as const;
 
@@ -112,6 +126,7 @@ const createArrApp = (
     headers,
     content: config.content,
     buildRefreshRequest: config.buildRefreshRequest,
+    buildRenameRequest: config.buildRenameRequest,
   };
 };
 
@@ -141,15 +156,37 @@ const refreshArr = async (
   }
 };
 
+const renameArr = async (
+  arrApp: IArrApp,
+  id: number,
+  args: IpluginInputArgs,
+): Promise<boolean> => {
+  try {
+    const response = await args.deps.axios({
+      method: 'post',
+      url: `${arrApp.host}/api/${API_VERSION}/command`,
+      headers: arrApp.headers,
+      data: arrApp.buildRenameRequest(id),
+    });
+
+    args.jobLog(`✔ Rename command sent to ${arrApp.name}.`);
+    return true;
+  } catch (error) {
+    args.jobLog(`Error triggering rename in ${arrApp.name}: ${(error as Error).message}`);
+    return false;
+  }
+};
+
 const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const lib = require('../../../../../methods/lib')();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-param-reassign
   args.inputs = lib.loadDefaultValues(args.inputs, details);
 
-  const { arr, arr_api_key, arr_host } = args.inputs as {
+  const { arr, arr_api_key, arr_host, autoRename } = args.inputs as {
     arr: 'radarr' | 'sonarr';
     arr_api_key: string;
     arr_host: string;
+    autoRename: boolean;
   };
   const arrApp = createArrApp(arr, arr_host, arr_api_key);
 
@@ -159,6 +196,11 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   const id = Number(args.variables.user.ArrId ?? -1);
   args.jobLog(`ArrId ${id} read from flow variables`);
   const refreshed = await refreshArr(arrApp, id, args);
+
+  if (autoRename && refreshed) {
+    args.jobLog('Auto Rename enabled, triggering rename...');
+    await renameArr(arrApp, id, args);
+  }
 
   return {
     outputFileObj: args.inputFileObj,
