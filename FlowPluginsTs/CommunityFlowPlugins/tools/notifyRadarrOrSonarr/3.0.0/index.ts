@@ -83,7 +83,7 @@ interface IArrApp {
   headers: IHTTPHeaders;
   content: string;
   buildRefreshRequest: (id: number) => string;
-  buildRenameRequest: (id: number) => string;
+  buildRenameRequest: (id: number, fileId: number) => string;
 }
 
 const API_VERSION = 'v3';
@@ -93,12 +93,19 @@ const arrConfigs = {
   radarr: {
     content: 'Movie',
     buildRefreshRequest: (id: number) => JSON.stringify({ name: 'RefreshMovie', movieIds: [id] }),
-    buildRenameRequest: () => JSON.stringify({ name: 'RenameMovie', movieIds: [] }),
+    buildRenameRequest: (id: number, fileId: number) => JSON.stringify({
+      name: 'renameMovieFiles',
+      movieId: id,
+      files: [fileId],
+    }),
   },
   sonarr: {
     content: 'Serie',
     buildRefreshRequest: (id: number) => JSON.stringify({ name: 'RefreshSeries', seriesId: id }),
-    buildRenameRequest: (_id: number) => JSON.stringify({ name: 'RenameSeries', seriesId: _id }),
+    buildRenameRequest: (id: number, _fileId: number) => JSON.stringify({
+      name: 'RenameSeries',
+      seriesId: id,
+    }),
   },
 } as const;
 
@@ -162,14 +169,46 @@ const renameArr = async (
   args: IpluginInputArgs,
 ): Promise<boolean> => {
   try {
-    const response = await args.deps.axios({
+    // First, fetch the movie/episode details to get the file ID
+    let fileId = 0;
+
+    if (arrApp.name === 'radarr') {
+      const movieResponse = await args.deps.axios({
+        method: 'get',
+        url: `${arrApp.host}/api/v3/movie/${id}`,
+        headers: arrApp.headers,
+      });
+      const movieData = movieResponse.data;
+      if (movieData?.movieFile?.id) {
+        fileId = movieData.movieFile.id;
+        args.jobLog(`Found movie file ID: ${fileId}`);
+      }
+    } else if (arrApp.name === 'sonarr') {
+      // For Sonarr, we need to get episode info
+      const seriesResponse = await args.deps.axios({
+        method: 'get',
+        url: `${arrApp.host}/api/v3/series/${id}`,
+        headers: arrApp.headers,
+      });
+      const seriesData = seriesResponse.data;
+      // Get the first episode file
+      if (seriesData?.episodes?.length > 0) {
+        const episodeFile = seriesData.episodes.find((e: { hasFile: boolean }) => e.hasFile);
+        if (episodeFile?.episodeFile?.id) {
+          fileId = episodeFile.episodeFile.id;
+          args.jobLog(`Found episode file ID: ${fileId}`);
+        }
+      }
+    }
+
+    await args.deps.axios({
       method: 'post',
-      url: `${arrApp.host}/api/${API_VERSION}/command`,
+      url: `${arrApp.host}/api/v3/command`,
       headers: arrApp.headers,
-      data: arrApp.buildRenameRequest(id),
+      data: arrApp.buildRenameRequest(id, fileId),
     });
 
-    args.jobLog(`✔ Rename command sent to ${arrApp.name}.`);
+    args.jobLog(`✔ Rename command sent to ${arrApp.name} for file ${fileId}.`);
     return true;
   } catch (error) {
     args.jobLog(`Error triggering rename in ${arrApp.name}: ${(error as Error).message}`);
