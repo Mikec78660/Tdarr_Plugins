@@ -73,6 +73,13 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
     } else {
       keptCount += 1;
       args.jobLog(`Keeping audio stream index ${stream.index} (position ${index + 1})`);
+
+      // Add copy codec to preserve original audio format
+      if (!stream.outputArgs) {
+        stream.outputArgs = [];
+      }
+      stream.outputArgs.push(`-c:${stream.index}`, 'copy');
+      args.jobLog(`Setting copy codec for audio stream index ${stream.index}`);
     }
   });
 

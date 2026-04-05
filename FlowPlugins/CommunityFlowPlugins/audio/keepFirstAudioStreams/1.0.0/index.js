@@ -65,6 +65,12 @@ var plugin = function (args) {
         else {
             keptCount += 1;
             args.jobLog("Keeping audio stream index ".concat(stream.index, " (position ").concat(index + 1, ")"));
+            // Add copy codec to preserve original audio format
+            if (!stream.outputArgs) {
+                stream.outputArgs = [];
+            }
+            stream.outputArgs.push("-c:".concat(stream.index), 'copy');
+            args.jobLog("Setting copy codec for audio stream index ".concat(stream.index));
         }
     });
     args.jobLog("Kept ".concat(keptCount, " audio stream(s), removed ").concat(removedCount, " audio stream(s)"));
