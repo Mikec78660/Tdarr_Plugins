@@ -169,15 +169,19 @@ const renameArr = async (
   args: IpluginInputArgs,
 ): Promise<boolean> => {
   try {
-    // For Radarr, fetch movie details to get the file ID, then use renameMovieFiles
+    // For Radarr, use a longer wait and then fetch the movie details
     if (arrApp.name === 'radarr') {
+      // Wait longer for Radarr to finish the refresh and file scan
+      args.jobLog('Waiting longer for Radarr to complete file scan...');
+      await new Promise((resolve) => setTimeout(resolve, 7000)); // Wait 7 seconds
+
       const movieResponse = await args.deps.axios({
         method: 'get',
         url: `${arrApp.host}/api/v3/movie/${id}`,
         headers: arrApp.headers,
       });
       const movieData = movieResponse.data;
-      args.jobLog(`Movie data: ${JSON.stringify(movieData).substring(0, 200)}`);
+      args.jobLog(`Movie data: ${JSON.stringify(movieData).substring(0, 300)}`);
 
       if (!movieData?.movieFile?.id) {
         args.jobLog('No movie file found for this movie, skipping rename');
@@ -187,15 +191,14 @@ const renameArr = async (
       const fileId = movieData.movieFile.id;
       args.jobLog(`Found movie file ID: ${fileId}`);
 
-      // Use renameMovieFiles command with specific file ID
+      // Try with just movieId first (simpler command)
       const commandData = {
-        name: 'renameMovieFiles',
-        movieId: id,
-        files: [fileId],
+        name: 'renameMovie',
+        movieIds: [id],
       };
       args.jobLog(`Sending command: ${JSON.stringify(commandData)}`);
 
-      const commandResponse = await args.deps.axios({
+      await args.deps.axios({
         method: 'post',
         url: `${arrApp.host}/api/v3/command`,
         headers: {
@@ -204,14 +207,15 @@ const renameArr = async (
         },
         data: commandData,
       });
-      args.jobLog(`Command response: ${JSON.stringify(commandResponse.data).substring(0, 200)}`);
 
-      args.jobLog(`✔ Rename command sent to ${arrApp.name} for movie ID ${id}, file ${fileId}.`);
+      args.jobLog(`✔ Rename command sent to ${arrApp.name} for movie ID ${id}.`);
       return true;
     }
 
     // For Sonarr, use the /api/rename endpoint to get rename preview, then trigger rename
     if (arrApp.name === 'sonarr') {
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
+
       await args.deps.axios({
         method: 'get',
         url: `${arrApp.host}/api/v3/rename?seriesId=${id}`,
@@ -260,8 +264,6 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // Wait for Radarr to complete the refresh before triggering rename
   // This is needed because the refresh is asynchronous in Radarr
   if (autoRename && refreshed) {
-    args.jobLog('Waiting for refresh to complete...');
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
     args.jobLog('Auto Rename enabled, triggering rename...');
     await renameArr(arrApp, id, args);
   }

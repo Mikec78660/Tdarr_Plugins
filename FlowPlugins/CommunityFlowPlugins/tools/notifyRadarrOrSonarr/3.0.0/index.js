@@ -187,22 +187,27 @@ var refreshArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, 
     });
 }); };
 var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, void 0, function () {
-    var movieResponse, movieData, fileId, commandData, commandResponse, error_2;
+    var movieResponse, movieData, fileId, commandData, error_2;
     var _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _b.trys.push([0, 7, , 8]);
-                if (!(arrApp.name === 'radarr')) return [3 /*break*/, 3];
+                _b.trys.push([0, 9, , 10]);
+                if (!(arrApp.name === 'radarr')) return [3 /*break*/, 4];
+                // Wait longer for Radarr to finish the refresh and file scan
+                args.jobLog('Waiting longer for Radarr to complete file scan...');
+                return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 7000); })];
+            case 1:
+                _b.sent(); // Wait 7 seconds
                 return [4 /*yield*/, args.deps.axios({
                         method: 'get',
                         url: "".concat(arrApp.host, "/api/v3/movie/").concat(id),
                         headers: arrApp.headers,
                     })];
-            case 1:
+            case 2:
                 movieResponse = _b.sent();
                 movieData = movieResponse.data;
-                args.jobLog("Movie data: ".concat(JSON.stringify(movieData).substring(0, 200)));
+                args.jobLog("Movie data: ".concat(JSON.stringify(movieData).substring(0, 300)));
                 if (!((_a = movieData === null || movieData === void 0 ? void 0 : movieData.movieFile) === null || _a === void 0 ? void 0 : _a.id)) {
                     args.jobLog('No movie file found for this movie, skipping rename');
                     return [2 /*return*/, false];
@@ -210,9 +215,8 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                 fileId = movieData.movieFile.id;
                 args.jobLog("Found movie file ID: ".concat(fileId));
                 commandData = {
-                    name: 'renameMovieFiles',
-                    movieId: id,
-                    files: [fileId],
+                    name: 'renameMovie',
+                    movieIds: [id],
                 };
                 args.jobLog("Sending command: ".concat(JSON.stringify(commandData)));
                 return [4 /*yield*/, args.deps.axios({
@@ -221,19 +225,21 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                         headers: __assign(__assign({}, arrApp.headers), { 'Content-Type': 'application/json' }),
                         data: commandData,
                     })];
-            case 2:
-                commandResponse = _b.sent();
-                args.jobLog("Command response: ".concat(JSON.stringify(commandResponse.data).substring(0, 200)));
-                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for movie ID ").concat(id, ", file ").concat(fileId, "."));
-                return [2 /*return*/, true];
             case 3:
-                if (!(arrApp.name === 'sonarr')) return [3 /*break*/, 6];
+                _b.sent();
+                args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for movie ID ").concat(id, "."));
+                return [2 /*return*/, true];
+            case 4:
+                if (!(arrApp.name === 'sonarr')) return [3 /*break*/, 8];
+                return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 5000); })];
+            case 5:
+                _b.sent(); // Wait 5 seconds
                 return [4 /*yield*/, args.deps.axios({
                         method: 'get',
                         url: "".concat(arrApp.host, "/api/v3/rename?seriesId=").concat(id),
                         headers: arrApp.headers,
                     })];
-            case 4:
+            case 6:
                 _b.sent();
                 return [4 /*yield*/, args.deps.axios({
                         method: 'post',
@@ -241,18 +247,18 @@ var renameArr = function (arrApp, id, args) { return __awaiter(void 0, void 0, v
                         headers: arrApp.headers,
                         data: JSON.stringify({ name: 'RenameSeries', seriesId: id }),
                     })];
-            case 5:
+            case 7:
                 _b.sent();
                 args.jobLog("\u2714 Rename command sent to ".concat(arrApp.name, " for series ID ").concat(id, "."));
                 return [2 /*return*/, true];
-            case 6:
+            case 8:
                 args.jobLog("Unknown arr type: ".concat(arrApp.name));
                 return [2 /*return*/, false];
-            case 7:
+            case 9:
                 error_2 = _b.sent();
                 args.jobLog("Error triggering rename in ".concat(arrApp.name, ": ").concat(error_2.message));
                 return [2 /*return*/, false];
-            case 8: return [2 /*return*/];
+            case 10: return [2 /*return*/];
         }
     });
 }); };
@@ -274,17 +280,13 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, refreshArr(arrApp, id, args)];
             case 1:
                 refreshed = _c.sent();
-                if (!(autoRename && refreshed)) return [3 /*break*/, 4];
-                args.jobLog('Waiting for refresh to complete...');
-                return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 3000); })];
-            case 2:
-                _c.sent(); // Wait 3 seconds
+                if (!(autoRename && refreshed)) return [3 /*break*/, 3];
                 args.jobLog('Auto Rename enabled, triggering rename...');
                 return [4 /*yield*/, renameArr(arrApp, id, args)];
-            case 3:
+            case 2:
                 _c.sent();
-                _c.label = 4;
-            case 4: return [2 /*return*/, {
+                _c.label = 3;
+            case 3: return [2 /*return*/, {
                     outputFileObj: args.inputFileObj,
                     outputNumber: refreshed ? 1 : 2,
                     variables: args.variables,
