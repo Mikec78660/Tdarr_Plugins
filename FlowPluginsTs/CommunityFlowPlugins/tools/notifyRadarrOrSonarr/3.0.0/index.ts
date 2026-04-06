@@ -177,6 +177,7 @@ const renameArr = async (
         headers: arrApp.headers,
       });
       const movieData = movieResponse.data;
+      args.jobLog(`Movie data: ${JSON.stringify(movieData).substring(0, 200)}`);
 
       if (!movieData?.movieFile?.id) {
         args.jobLog('No movie file found for this movie, skipping rename');
@@ -187,16 +188,23 @@ const renameArr = async (
       args.jobLog(`Found movie file ID: ${fileId}`);
 
       // Use renameMovieFiles command with specific file ID
-      await args.deps.axios({
+      const commandData = {
+        name: 'renameMovieFiles',
+        movieId: id,
+        files: [fileId],
+      };
+      args.jobLog(`Sending command: ${JSON.stringify(commandData)}`);
+
+      const commandResponse = await args.deps.axios({
         method: 'post',
         url: `${arrApp.host}/api/v3/command`,
-        headers: arrApp.headers,
-        data: JSON.stringify({
-          name: 'renameMovieFiles',
-          movieId: id,
-          files: [fileId],
-        }),
+        headers: {
+          ...arrApp.headers,
+          'Content-Type': 'application/json',
+        },
+        data: commandData,
       });
+      args.jobLog(`Command response: ${JSON.stringify(commandResponse.data).substring(0, 200)}`);
 
       args.jobLog(`✔ Rename command sent to ${arrApp.name} for movie ID ${id}, file ${fileId}.`);
       return true;
