@@ -261,13 +261,17 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
                 return [4 /*yield*/, refreshArr(arrApp, id, args)];
             case 1:
                 refreshed = _c.sent();
-                if (!(autoRename && refreshed)) return [3 /*break*/, 3];
+                if (!(autoRename && refreshed)) return [3 /*break*/, 4];
+                args.jobLog('Waiting for refresh to complete...');
+                return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 3000); })];
+            case 2:
+                _c.sent(); // Wait 3 seconds
                 args.jobLog('Auto Rename enabled, triggering rename...');
                 return [4 /*yield*/, renameArr(arrApp, id, args)];
-            case 2:
+            case 3:
                 _c.sent();
-                _c.label = 3;
-            case 3: return [2 /*return*/, {
+                _c.label = 4;
+            case 4: return [2 /*return*/, {
                     outputFileObj: args.inputFileObj,
                     outputNumber: refreshed ? 1 : 2,
                     variables: args.variables,

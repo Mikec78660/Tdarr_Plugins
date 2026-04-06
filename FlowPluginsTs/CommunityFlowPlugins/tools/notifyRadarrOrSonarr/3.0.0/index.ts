@@ -249,7 +249,11 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   args.jobLog(`ArrId ${id} read from flow variables`);
   const refreshed = await refreshArr(arrApp, id, args);
 
+  // Wait for Radarr to complete the refresh before triggering rename
+  // This is needed because the refresh is asynchronous in Radarr
   if (autoRename && refreshed) {
+    args.jobLog('Waiting for refresh to complete...');
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
     args.jobLog('Auto Rename enabled, triggering rename...');
     await renameArr(arrApp, id, args);
   }
