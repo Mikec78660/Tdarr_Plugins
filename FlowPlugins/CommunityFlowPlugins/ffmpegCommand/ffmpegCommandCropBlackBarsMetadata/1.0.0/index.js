@@ -12,9 +12,9 @@ var details = function () { return ({
     tags: 'video',
     isStartPlugin: false,
     pType: '',
-    requiresVersion: '2.11.01',
+    requiresVersion: '2.00.00',
     sidebarPosition: -1,
-    icon: 'faCrop',
+    icon: '',
     inputs: [
         {
             label: 'Threshold',
