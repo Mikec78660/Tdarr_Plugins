@@ -89,6 +89,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
         }
         args.jobLog("Merging files. Setting display dimensions to ".concat(croppedWidth, "x").concat(croppedHeight));
         cmd = "\"".concat(mkvmergePath, "\" -o \"").concat(outputPath, "\" --display-dimensions 0:").concat(croppedWidth, "x").concat(croppedHeight, " \"").concat(workVideoPath, "\" --no-video \"").concat(inputPath, "\"");
+        args.jobLog("Running merge command: ".concat(cmd));
         try {
             execSync(cmd);
             args.jobLog('Merged successfully');

@@ -61,6 +61,8 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   // mkvmerge -o "final output file" --display-dimensions 0:3840x1600 output-file --no-video "input.mkv"
   const cmd = `"${mkvmergePath}" -o "${outputPath}" --display-dimensions 0:${croppedWidth}x${croppedHeight} "${workVideoPath}" --no-video "${inputPath}"`;
   
+  args.jobLog(`Running merge command: ${cmd}`);
+  
   try {
     execSync(cmd);
     args.jobLog('Merged successfully');
