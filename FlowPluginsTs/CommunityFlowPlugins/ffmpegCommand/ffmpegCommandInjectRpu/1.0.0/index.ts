@@ -60,7 +60,7 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
   try {
     // 1. Extract raw HEVC bitstream from input (likely MKV)
     args.jobLog(`Extracting raw HEVC bitstream from ${inputPath}`);
-    const extractCmd = `"${ffmpegPath}" -i "${inputPath}" -c:v copy -vbsf hevc_mp4toannexb -f hevc "${rawHevcPath}" -y`;
+    const extractCmd = `"${ffmpegPath}" -i "${inputPath}" -c:v copy -bsf:v hevc_mp4toannexb -f hevc "${rawHevcPath}" -y`;
     execSync(extractCmd);
 
     // 2. Inject RPU into raw HEVC

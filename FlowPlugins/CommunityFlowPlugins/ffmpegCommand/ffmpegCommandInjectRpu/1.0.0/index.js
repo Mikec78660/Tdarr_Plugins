@@ -91,7 +91,7 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
         try {
             // 1. Extract raw HEVC bitstream from input (likely MKV)
             args.jobLog("Extracting raw HEVC bitstream from ".concat(inputPath));
-            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -c:v copy -vbsf hevc_mp4toannexb -f hevc \"").concat(rawHevcPath, "\" -y");
+            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -c:v copy -bsf:v hevc_mp4toannexb -f hevc \"").concat(rawHevcPath, "\" -y");
             execSync(extractCmd);
             // 2. Inject RPU into raw HEVC
             args.jobLog("Injecting RPU from ".concat(rpuPath, " into ").concat(rawInjectedPath));
