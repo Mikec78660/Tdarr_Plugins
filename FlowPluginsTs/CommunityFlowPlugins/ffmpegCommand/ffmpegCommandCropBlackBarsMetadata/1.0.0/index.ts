@@ -127,9 +127,9 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
 
   // Add metadata arguments to the ffmpegCommand
   // Using overallOuputArguments (note the typo in Tdarr)
+  // We do NOT add -map 0 or -c copy here because Tdarr's executor handles mapping individually.
+  // Adding them here would cause duplicate tracks.
   args.variables.ffmpegCommand.overallOuputArguments.push(
-    '-map', '0',
-    '-c', 'copy',
     '-bsf:v:0', `hevc_metadata=crop_top=${y}:crop_bottom=${y}`,
   );
   args.variables.ffmpegCommand.shouldProcess = true;
