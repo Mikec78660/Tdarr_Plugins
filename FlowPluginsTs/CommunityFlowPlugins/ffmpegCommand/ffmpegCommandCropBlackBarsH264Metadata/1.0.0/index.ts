@@ -112,9 +112,14 @@ const plugin = (args: IpluginInputArgs): IpluginOutputArgs => {
 
   // If consistent, parse values: w:h:x:y
   const parts = firstCrop.split(':');
+  const w = parts[0];
+  const h = parts[1];
   const y = parseInt(parts[3], 10);
 
-  args.jobLog(`Detected consistent crop: ${firstCrop} (y=${y})`);
+  args.variables.user.cropped_width = w;
+  args.variables.user.cropped_height = h;
+
+  args.jobLog(`Detected consistent crop: ${firstCrop} (y=${y}). Setting flow variables: ${w}x${h}`);
 
   if (y <= threshold) {
     args.jobLog(`Crop y (${y}) is below or equal to threshold (${threshold}). Skipping crop.`);

@@ -101,8 +101,12 @@ var plugin = function (args) {
     }
     // If consistent, parse values: w:h:x:y
     var parts = firstCrop.split(':');
+    var w = parts[0];
+    var h = parts[1];
     var y = parseInt(parts[3], 10);
-    args.jobLog("Detected consistent crop: ".concat(firstCrop, " (y=").concat(y, ")"));
+    args.variables.user.cropped_width = w;
+    args.variables.user.cropped_height = h;
+    args.jobLog("Detected consistent crop: ".concat(firstCrop, " (y=").concat(y, "). Setting flow variables: ").concat(w, "x").concat(h));
     if (y <= threshold) {
         args.jobLog("Crop y (".concat(y, ") is below or equal to threshold (").concat(threshold, "). Skipping crop."));
         return {
