@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.plugin = exports.details = void 0;
 var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var details = function () { return ({
-    name: 'Crop Black Bars Metadata',
+    name: 'Crop Black Bars HEVC Metadata',
     description: 'Detects black bars and adds HEVC metadata crop values without re-encoding. Runs cropdetect at 300s and 600s.',
     style: {
         borderColor: '#6efefc',
@@ -14,7 +14,7 @@ var details = function () { return ({
     pType: '',
     requiresVersion: '2.11.01',
     sidebarPosition: -1,
-    icon: 'crop',
+    icon: 'faCrop',
     inputs: [
         {
             label: 'Threshold',
