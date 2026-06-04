@@ -40,7 +40,7 @@ exports.plugin = exports.details = void 0;
 var fileUtils_1 = require("../../../../FlowHelpers/1.0.0/fileUtils");
 var details = function () { return ({
     name: 'Inject RPU (Dolby Vision)',
-    description: 'Injects extracted RPU data back into a video using dovi_tool.',
+    description: 'Injects extracted RPU data back into a video. Handles MKV by extracting raw HEVC bitstream first.',
     style: {
         borderColor: '#6efefc',
     },
@@ -71,33 +71,45 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, execSync, doviToolPath, inputPath, rpuPath, workDir, fileName, outputPath, cmd;
+    var lib, execSync, fs, doviToolPath, ffmpegPath, inputPath, rpuPath, workDir, fileName, rawHevcPath, rawInjectedPath, extractCmd, injectCmd;
     return __generator(this, function (_a) {
         lib = require('../../../../../methods/lib')();
         execSync = require('child_process').execSync;
+        fs = require('fs');
         args.inputs = lib.loadDefaultValues(args.inputs, details);
         doviToolPath = String(args.inputs.doviToolPath);
+        ffmpegPath = args.ffmpegPath;
         inputPath = args.inputFileObj._id;
         rpuPath = args.variables.user.rpu_path;
         workDir = (0, fileUtils_1.getPluginWorkDir)(args);
         fileName = (0, fileUtils_1.getFileName)(inputPath);
-        outputPath = "".concat(workDir, "/").concat(fileName, "_injected.mkv");
+        rawHevcPath = "".concat(workDir, "/").concat(fileName, ".hevc");
+        rawInjectedPath = "".concat(workDir, "/").concat(fileName, "_injected.hevc");
         if (!rpuPath) {
             throw new Error('No RPU path found in flow variables. Please use "Extract RPU" before this plugin.');
         }
-        args.jobLog("Injecting RPU from ".concat(rpuPath, " into ").concat(outputPath));
-        cmd = "\"".concat(doviToolPath, "\" inject-rpu --input \"").concat(inputPath, "\" --rpu-in \"").concat(rpuPath, "\" -o \"").concat(outputPath, "\"");
         try {
-            execSync(cmd);
-            args.jobLog('RPU injected successfully');
+            // 1. Extract raw HEVC bitstream from input (likely MKV)
+            args.jobLog("Extracting raw HEVC bitstream from ".concat(inputPath));
+            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -c:v copy -vbsf hevc_mp4toannexb -f hevc \"").concat(rawHevcPath, "\" -y");
+            execSync(extractCmd);
+            // 2. Inject RPU into raw HEVC
+            args.jobLog("Injecting RPU from ".concat(rpuPath, " into ").concat(rawInjectedPath));
+            injectCmd = "\"".concat(doviToolPath, "\" inject-rpu --input \"").concat(rawHevcPath, "\" --rpu-in \"").concat(rpuPath, "\" -o \"").concat(rawInjectedPath, "\"");
+            execSync(injectCmd);
+            // 3. Cleanup temp raw HEVC
+            if (fs.existsSync(rawHevcPath)) {
+                fs.unlinkSync(rawHevcPath);
+            }
+            args.jobLog('RPU injected successfully into raw bitstream');
         }
         catch (err) {
-            args.jobLog("Error injecting RPU: ".concat(err.message));
+            args.jobLog("Error during RPU injection process: ".concat(err.message));
             throw new Error("RPU injection failed: ".concat(err.message));
         }
         return [2 /*return*/, {
                 outputFileObj: {
-                    _id: outputPath,
+                    _id: rawInjectedPath,
                 },
                 outputNumber: 1,
                 variables: args.variables,
