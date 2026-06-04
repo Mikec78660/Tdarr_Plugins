@@ -71,7 +71,7 @@ var details = function () { return ({
 }); };
 exports.details = details;
 var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function () {
-    var lib, execSync, fs, doviToolPath, ffmpegPath, inputPath, rpuPath, workDir, fileName, rawHevcPath, rawInjectedPath, extractCmd, injectCmd;
+    var lib, execSync, fs, doviToolPath, ffmpegPath, inputPath, rpuPath, workDir, fileName, rawHevcPath, rawInjectedPath, extraArgs, extractCmd, injectCmd;
     return __generator(this, function (_a) {
         lib = require('../../../../../methods/lib')();
         execSync = require('child_process').execSync;
@@ -91,7 +91,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
         try {
             // 1. Extract raw HEVC bitstream from input (likely MKV)
             args.jobLog("Extracting raw HEVC bitstream from ".concat(inputPath));
-            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -c:v copy -bsf:v hevc_mp4toannexb -f hevc \"").concat(rawHevcPath, "\" -y");
+            extraArgs = args.variables.ffmpegCommand.overallOuputArguments.join(' ');
+            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -c:v copy ").concat(extraArgs, " -bsf:v hevc_mp4toannexb -f hevc \"").concat(rawHevcPath, "\" -y");
             execSync(extractCmd);
             // 2. Inject RPU into raw HEVC
             args.jobLog("Injecting RPU from ".concat(rpuPath, " into ").concat(rawInjectedPath));
