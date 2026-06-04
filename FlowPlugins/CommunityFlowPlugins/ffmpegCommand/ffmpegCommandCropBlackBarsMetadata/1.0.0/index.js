@@ -7,14 +7,13 @@ var details = function () { return ({
     description: 'Detects black bars and adds HEVC metadata crop values without re-encoding. Runs cropdetect at 300s and 600s.',
     style: {
         borderColor: '#6efefc',
-        opacity: 0.5,
     },
     tags: 'video',
     isStartPlugin: false,
     pType: '',
     requiresVersion: '2.00.00',
     sidebarPosition: -1,
-    icon: '',
+    icon: 'faCrop',
     inputs: [
         {
             label: 'Threshold',
