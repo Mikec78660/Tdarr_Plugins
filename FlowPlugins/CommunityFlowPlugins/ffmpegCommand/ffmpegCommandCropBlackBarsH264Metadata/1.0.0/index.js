@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.plugin = exports.details = void 0;
 var flowUtils_1 = require("../../../../FlowHelpers/1.0.0/interfaces/flowUtils");
 var details = function () { return ({
-    name: 'H264 Metadata Crop Detect',
+    name: 'Crop Black Bars h264 Metadata',
     description: 'Detects black bars and adds H264 metadata crop values without re-encoding. Runs cropdetect at 300s and 600s.',
     style: {
         borderColor: '#6efefc',

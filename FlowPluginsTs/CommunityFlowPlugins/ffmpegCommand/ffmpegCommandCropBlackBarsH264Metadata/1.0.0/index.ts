@@ -6,7 +6,7 @@ import {
 import { checkFfmpegCommandInit } from '../../../../FlowHelpers/1.0.0/interfaces/flowUtils';
 
 const details = (): IpluginDetails => ({
-  name: 'H264 Metadata Crop Detect',
+  name: 'Crop Black Bars h264 Metadata',
   description: 'Detects black bars and adds H264 metadata crop values without re-encoding. Runs cropdetect at 300s and 600s.',
   style: {
     borderColor: '#6efefc',
