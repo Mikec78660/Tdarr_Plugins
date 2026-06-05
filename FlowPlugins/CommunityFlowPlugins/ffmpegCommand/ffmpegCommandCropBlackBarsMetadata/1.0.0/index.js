@@ -119,7 +119,7 @@ var plugin = function (args) {
     // Using overallOuputArguments (note the typo in Tdarr)
     // We do NOT add -map 0 or -c copy here because Tdarr's executor handles mapping individually.
     // Adding them here would cause duplicate tracks.
-    args.variables.ffmpegCommand.overallOuputArguments.push('-bsf:v:0', "hevc_metadata=crop_top=".concat(y, ":crop_bottom=").concat(y));
+    args.variables.ffmpegCommand.overallOuputArguments.push('-bsf:v', "hevc_metadata=crop_top=".concat(y, ":crop_bottom=").concat(y));
     args.variables.ffmpegCommand.shouldProcess = true;
     args.jobLog("Added HEVC metadata crop arguments: crop_top=".concat(y, ", crop_bottom=").concat(y));
     return {

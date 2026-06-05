@@ -92,7 +92,8 @@ var plugin = function (args) { return __awaiter(void 0, void 0, void 0, function
             // 1. Extract raw HEVC bitstream from input (likely MKV)
             args.jobLog("Extracting raw HEVC bitstream from ".concat(inputPath));
             extraArgs = args.variables.ffmpegCommand.overallOuputArguments.join(' ');
-            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -c:v copy ").concat(extraArgs, " -bsf:v hevc_mp4toannexb -f hevc \"").concat(rawHevcPath, "\" -y");
+            extractCmd = "\"".concat(ffmpegPath, "\" -i \"").concat(inputPath, "\" -map 0:v:0 -c:v copy ").concat(extraArgs, " \"").concat(rawHevcPath, "\" -y");
+            args.jobLog("Running extraction command: ".concat(extractCmd));
             execSync(extractCmd);
             // 2. Inject RPU into raw HEVC
             args.jobLog("Injecting RPU from ".concat(rpuPath, " into ").concat(rawInjectedPath));

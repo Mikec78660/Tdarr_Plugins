@@ -63,8 +63,10 @@ const plugin = async (args: IpluginInputArgs): Promise<IpluginOutputArgs> => {
     
     // Include any overallOuputArguments (like the crop metadata BSF)
     const extraArgs = args.variables.ffmpegCommand.overallOuputArguments.join(' ');
-    const extractCmd = `"${ffmpegPath}" -i "${inputPath}" -c:v copy ${extraArgs} -bsf:v hevc_mp4toannexb -f hevc "${rawHevcPath}" -y`;
+    // Use -map 0:v:0 to extract first video stream as raw HEVC
+    const extractCmd = `"${ffmpegPath}" -i "${inputPath}" -map 0:v:0 -c:v copy ${extraArgs} "${rawHevcPath}" -y`;
     
+    args.jobLog(`Running extraction command: ${extractCmd}`);
     execSync(extractCmd);
 
     // 2. Inject RPU into raw HEVC
